@@ -17,12 +17,8 @@ public class FrontController extends HttpServlet {
         resp.setContentType("text/plain");
         // getting the URL requested by the client
         String requestedURL = req.getRequestURL().toString();
-        // getting the URL where they made the request
-        String originURL = req.getHeader("origin");
         String output = "Requested URL: "
-                        + requestedURL
-                        + "\n Origin URL: "
-                        + originURL;
+                        + requestedURL;
         // printing both
         try (PrintWriter out = resp.getWriter()) {
             out.println(output);
