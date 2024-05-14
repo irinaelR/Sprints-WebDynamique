@@ -1,5 +1,9 @@
 ## Sprints Web Dynamique
 
+### Versions de Java
+Ce projet a été créé avec JDK 19 et testé sur Tomcat 10.1.
+Il nécessite l'ajout d'une librairie servlet-api relative à la version de Tomcat utilisée. Pour le développement de ce projet, jakarta.servlet-api-6.1.0-M2.jar est la librairie utilisée. 
+
 ### Sprint 0
 07/05/2024
 Création d'un FrontController qui va simplement afficher l'url demandée après "/"
