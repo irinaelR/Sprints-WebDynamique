@@ -5,7 +5,6 @@ import java.io.PrintWriter;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
-import framework.annotations.Controller;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -69,12 +68,6 @@ public class FrontController extends HttpServlet {
                 
                 Class<? extends Annotation> controllerAnnotation = (Class<? extends Annotation>) Class.forName("framework.annotations.Controller");
                 
-                // String currentDir = ;
-                // String currentDir = System.getProperty("user.dir") + "/webapps" + context.getContextPath() + "/WEB-INF/classes";
-
-                // out.println(currentDir); 
-
-                // String projectPath = System.getProperty("user.dir") + "/"
 
                 List<Class<?>> allClasses = this.findClasses(packageName);
 
@@ -96,6 +89,9 @@ public class FrontController extends HttpServlet {
         for (String name : controllerNamesList) {
             out.println("- " + name);
         }
+
+        // SPRINT 0 CODE
+        
         // // getting the URL requested by the client
         // String requestedURL = req.getRequestURL().toString();
         // String output = "Requested URL: "
