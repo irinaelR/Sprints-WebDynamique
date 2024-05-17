@@ -38,9 +38,14 @@ public class FrontController extends HttpServlet {
         this.controllerNamesList = controllerNamesList;
     }
 
+    /*
+     * findClasses will fetch all classes inside the package 'packageName'
+     * and return them as a List
+     */
     public List<Class<?>> findClasses(String packageName) throws ClassNotFoundException {
         List<Class<?>> classes = new ArrayList<>();
 
+        // making sure the path to the controller package is correct
         String path = "WEB-INF/classes/" + packageName.replace(".", "/");
         String realPath = getServletContext().getRealPath(path);
 
@@ -48,6 +53,7 @@ public class FrontController extends HttpServlet {
         File[] files = directory.listFiles();
 
         for(File f : files) {
+            // filtering class files
             if(f.isFile() && f.getName().endsWith(".class")) {
                 String className = packageName + "." + f.getName().split(".class")[0];
                 classes.add(Class.forName(className));
@@ -62,17 +68,20 @@ public class FrontController extends HttpServlet {
 
         PrintWriter out = resp.getWriter();
 
+        // simply printing the controllers inside the controller package
         out.println("Controllers");
         for (String name : controllerNamesList) {
             out.println("- " + name);
         }
         
+        out.println();
+
         // getting the URL requested by the client
         String requestedURL = req.getRequestURL().toString();
         String[] partedReq = requestedURL.split("/");
         String urlToSearch = partedReq[partedReq.length - 1];
-        // out.println(partedReq[partedReq.length - 1]);
         
+        // searching for that URL inside of our HashMap
         if(urlToMethods.containsKey(urlToSearch)) {
             Mapping m = urlToMethods.get(urlToSearch);
             String output = "The controller " + m.getClassName() + " will call the method " + m.getMethodName();
@@ -94,6 +103,8 @@ public class FrontController extends HttpServlet {
     @Override
     public void init() throws ServletException {
         super.init();
+
+        // fetching the controller package's value from web.xml
         ServletContext context = getServletContext();
         String packageName = context.getInitParameter("controller-package");
 
@@ -104,7 +115,7 @@ public class FrontController extends HttpServlet {
         urls = new HashMap<>(); // making sure the variable isn't null and emptying it everytime
         
         try {
-            
+            // annotation classes
             Class<? extends Annotation> controllerAnnotation = (Class<? extends Annotation>) Class.forName("framework.annotations.Controller");
             Class<? extends Annotation> getAnnotation = (Class<? extends Annotation>) Class.forName("framework.annotations.Get");
 
