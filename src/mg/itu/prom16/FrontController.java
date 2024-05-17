@@ -1,29 +1,33 @@
 package mg.itu.prom16;
 
 import java.io.*;
-import java.io.PrintWriter;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+
+import framework.annotations.Get;
+import framework.utilities.Mapping;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-/**
+/*
  * FrontController
  */
 public class FrontController extends HttpServlet {
-    boolean hasChecked = false;
     List<String> controllerNamesList;
+    HashMap<String, Mapping> urlToMethods;
 
-    public boolean isHasChecked() {
-        return hasChecked;
+    public HashMap<String, Mapping> getUrlToMethods() {
+        return urlToMethods;
     }
 
-    public void setHasChecked(boolean hasChecked) {
-        this.hasChecked = hasChecked;
+    public void setUrlToMethods(HashMap<String, Mapping> urlToMethods) {
+        this.urlToMethods = urlToMethods;
     }
 
     public List<String> getControllerNamesList() {
@@ -57,61 +61,80 @@ public class FrontController extends HttpServlet {
         resp.setContentType("text/plain");
 
         PrintWriter out = resp.getWriter();
-        if(!hasChecked) {
-            ServletContext context = getServletContext();
-            String packageName = context.getInitParameter("controller-package");
-
-            List<String> controllers = this.getControllerNamesList();
-            controllers = new ArrayList<>(); // s'assurer que la variable n'est pas null mais au moins vide
-            
-            try {
-                
-                Class<? extends Annotation> controllerAnnotation = (Class<? extends Annotation>) Class.forName("framework.annotations.Controller");
-                
-
-                List<Class<?>> allClasses = this.findClasses(packageName);
-
-                out.println("All classes");
-                for (Class<?> classe : allClasses) {
-                    if(classe.isAnnotationPresent(controllerAnnotation)) {
-                        controllers.add(classe.getName());
-                    }
-                    out.println(classe);
-                }
-
-                this.setControllerNamesList(controllers);
-            } catch (Exception e) {
-                out.println(e.getMessage());
-            }
-        }
 
         out.println("Controllers");
         for (String name : controllerNamesList) {
             out.println("- " + name);
         }
-
-        // SPRINT 0 CODE
         
-        // // getting the URL requested by the client
-        // String requestedURL = req.getRequestURL().toString();
-        // String output = "Requested URL: "
-        //                 + requestedURL;
-        // // printing both
-        // try (PrintWriter out = resp.getWriter()) {
-        //     out.println(output);
-        // }
+        // getting the URL requested by the client
+        String requestedURL = req.getRequestURL().toString();
+        String[] partedReq = requestedURL.split("/");
+        String urlToSearch = partedReq[partedReq.length - 1];
+        // out.println(partedReq[partedReq.length - 1]);
+        
+        if(urlToMethods.containsKey(urlToSearch)) {
+            Mapping m = urlToMethods.get(urlToSearch);
+            String output = "The controller " + m.getClassName() + " will call the method " + m.getMethodName();
+            out.println(output);
+        }
+        
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        // TODO Auto-generated method stub
         processRequest(req, resp);
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        // TODO Auto-generated method stub
         processRequest(req, resp);
+    }
+
+    @Override
+    public void init() throws ServletException {
+        super.init();
+        ServletContext context = getServletContext();
+        String packageName = context.getInitParameter("controller-package");
+
+        List<String> controllers = this.getControllerNamesList();
+        controllers = new ArrayList<>(); // making sure the variable isn't null and emptying it everytime
+
+        HashMap<String, Mapping> urls = this.getUrlToMethods();
+        urls = new HashMap<>(); // making sure the variable isn't null and emptying it everytime
+        
+        try {
+            
+            Class<? extends Annotation> controllerAnnotation = (Class<? extends Annotation>) Class.forName("framework.annotations.Controller");
+            Class<? extends Annotation> getAnnotation = (Class<? extends Annotation>) Class.forName("framework.annotations.Get");
+
+            // fetching all classes in the controllers package
+            List<Class<?>> allClasses = this.findClasses(packageName);
+
+            for (Class<?> classe : allClasses) {
+                // checking which of these classes are controllers
+                if(classe.isAnnotationPresent(controllerAnnotation)) {
+                    controllers.add(classe.getName());
+
+                    // iterating through all the methods of the controller classes to check which ones are annotated with Get
+                    Method[] allMethods = classe.getMethods();
+                    for (Method m : allMethods) {
+                        if (m.isAnnotationPresent(getAnnotation)) {
+                            // when a method is annotated with Get, we fetch its url value and create a new couple in the urlsToMethods Map
+                            Get mGetAnnotation = (Get) m.getAnnotation(getAnnotation);
+                            urls.put(mGetAnnotation.url(), new Mapping(classe.getName(), m.getName()));
+                        }
+                    }
+
+                }
+            }
+
+            // setting the values of the attributes
+            this.setControllerNamesList(controllers);
+            this.setUrlToMethods(urls);
+        } catch (Exception e) {
+            
+        }
     }
 
     
