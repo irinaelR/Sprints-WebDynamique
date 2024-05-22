@@ -19,4 +19,36 @@ Dans le projet, dans le fichier web.xml, il faudra déclarer une variable comme 
     <param-value>votre.package.exemple</param-value>
 </context-param>
 ```
-A noter que le param-value *doit absolument* être "controller-package" pour que le système fonctionne.
+A noter que le param-value *doit absolument* être "controller-package" pour que le système fonctionne. 
+
+### Sprint 2
+17/05/2024
+Le FrontController peut désormais afficher la méthode (et la classe qui la contient) annotée pour l'url demandée. 
+```
+package my.test.app.controllers;
+
+import framework.annotations.*;
+
+@Controller
+public class TestController {
+
+    @Get(url="liste")
+    public void listeEmp() {
+
+    }
+
+    @Get(url="add")
+    public void insertEmp() {
+        
+    }
+}
+
+```
+Par exemple, ici, si l'on tape l'url http://localhost:8080/Votre-Projet/liste, le FrontController va nous afficher :
+```
+Controllers
+- my.test.app.controllers.TestController
+The controller my.test.app.controllers.TestController will call the method listeEmp
+```
+
+\* IMPORTANT : L'url à mettre dans l'annotation Get ne devrait pas contenir de slash '/'
