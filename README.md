@@ -50,3 +50,5 @@ Controllers
 - my.test.app.controllers.TestController
 The controller my.test.app.controllers.TestController will call the method listeEmp
 ```
+
+\* IMPORTANT : L'url à mettre dans l'annotation Get ne devrait pas contenir de slash '/'
