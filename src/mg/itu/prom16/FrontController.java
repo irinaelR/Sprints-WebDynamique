@@ -94,6 +94,8 @@ public class FrontController extends HttpServlet {
                 out.println(e.getMessage());
             }
             
+        } else {
+            out.println("No method matching '" + urlToSearch + "' to call");
         }
 
         out.flush();
