@@ -52,3 +52,8 @@ The controller my.test.app.controllers.TestController will call the method liste
 ```
 
 \* IMPORTANT : L'url à mettre dans l'annotation Get ne devrait pas contenir de slash '/'
+
+### Sprint 3
+28/05/2024
+
+Une fois la méthode correspondant à l'URL est trouvée, nous allons l'appeler. Pour l'instant, les méthodes retournent simplement un objet String à afficher. 

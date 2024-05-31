@@ -1,5 +1,7 @@
 package framework.utilities;
 
+import java.lang.reflect.Method;
+
 public class Mapping {
     String className;
     String methodName;
@@ -22,5 +24,18 @@ public class Mapping {
         this.methodName = methodName;
     }
     public Mapping() {
+    }
+
+    public Object invoke() throws Exception {
+        Object o = null;
+        
+        Class<?> clazz = Class.forName(this.getClassName());
+        Object ins = clazz.getConstructor().newInstance();
+
+        Method m = clazz.getMethod(this.getMethodName(), null);
+
+        o = m.invoke(ins, null);
+
+        return o;
     }
 }
