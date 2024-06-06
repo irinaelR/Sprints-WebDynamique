@@ -38,4 +38,19 @@ public class Mapping {
 
         return o;
     }
+
+    public Class<?> getReturnType() throws Exception {
+        Class<?> clazz = null;
+
+        try {
+            Method m = Class.forName(this.getClassName()).getDeclaredMethod(this.getMethodName(), null);
+            clazz = m.getReturnType();
+        } catch (ClassNotFoundException cnfe) {
+            throw new Exception("La classe " + this.getClassName() + " dans votre object Mapping n'existe pas", cnfe);
+        } catch (NoSuchMethodException nsme) {
+            throw new Exception("La fonction " + this.getMethodName() + " dans La classe " + this.getClassName() + " n'existe pas", nsme);
+        }
+
+        return clazz;
+    }
 }

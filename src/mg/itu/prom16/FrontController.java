@@ -68,14 +68,6 @@ public class FrontController extends HttpServlet {
 
         PrintWriter out = resp.getWriter();
 
-        // simply printing the controllers inside the controller package
-        // out.println("Controllers");
-        // for (String name : controllerNamesList) {
-        //     out.println("- " + name);
-        // }
-        
-        // out.println();
-
         // getting the URL requested by the client
         String requestedURL = req.getRequestURL().toString();
         String[] partedReq = requestedURL.split("/");
@@ -84,12 +76,19 @@ public class FrontController extends HttpServlet {
         // searching for that URL inside of our HashMap
         if(urlToMethods.containsKey(urlToSearch)) {
             Mapping m = urlToMethods.get(urlToSearch);
-            // String output = "The controller " + m.getClassName() + " will call the method " + m.getMethodName();
-            // out.println(output);
-            // out.println();
             try {
-                String result = (String) m.invoke();
-                out.println(result);
+                Object result = m.invoke();
+                Class<?> returnType = m.getReturnType();
+
+                if(returnType == String.class) {
+                    out.println((String) result);
+                } else if(returnType == ModelAndView.class) {
+                    ModelAndView mv = (ModelAndView) result;
+                    mv.sendToView(req, resp);
+                } else {
+                    throw new ServletException("Erreur : type de retour non supporté");
+                }
+
             } catch (Exception e) {
                 out.println(e.getMessage());
             }
