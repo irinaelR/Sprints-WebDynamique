@@ -122,3 +122,6 @@ public ModelAndView listeEmp() {
 04/06/2024
 
 Cette fois-ci, nous allons nous assurer que le projet gère correctement les exceptions. 
+- Le package de controller dans `<context-param>` ne doit être ni **vide** ni **inexistant**
+- Le type de retour des fonctions annotées Get **doivent** être soit de type String (=> réponse text/plain) soit de type ModelAndView (=> redirection vers la vue choisie)
+- Plusieurs fonctions annotées Get ne peuvent pas avoir le même URL même si elles sont dans des controllers différents
