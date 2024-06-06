@@ -89,12 +89,14 @@ public class FrontController extends HttpServlet {
                     throw new ServletException("Erreur : type de retour non supporté");
                 }
 
+            } catch (ServletException se) {
+                throw se;
             } catch (Exception e) {
-                out.println(e.getMessage());
+                out.println(e);
             }
             
         } else {
-            out.println("No method matching '" + urlToSearch + "' to call");
+            throw new ServletException("No method matching '" + urlToSearch + "' to call");
         }
 
         out.flush();

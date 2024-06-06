@@ -118,3 +118,7 @@ public ModelAndView listeEmp() {
 </html>
 ```
 
+### Sprint 5
+04/06/2024
+
+Cette fois-ci, nous allons nous assurer que le projet gère correctement les exceptions. 
