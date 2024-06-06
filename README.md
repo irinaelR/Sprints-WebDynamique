@@ -57,3 +57,64 @@ The controller my.test.app.controllers.TestController will call the method liste
 28/05/2024
 
 Une fois la méthode correspondant à l'URL est trouvée, nous allons l'appeler. Pour l'instant, les méthodes retournent simplement un objet String à afficher. 
+
+### Sprint 4
+31/05/2024
+
+A présent, nous allons manipuler deux types de retour pour les fonctions annotées Get dans les controllers du projet de test. La nouvelle classe **ModelAndView** possède un attribut url, qui sera la vue vers laquelle on va être redirigé. On peut également ajouter des attributs à la requête à travers sa méthode *addObject(String key, Object value)*. Ces objects seront accessibles à la vue non pas comme paramètres mais comme attributs. 
+Ci-après un exemple de code. 
+
+#### Structure du projet
+Modifiez vos URLs en fonction de votre structure
+
+```
+Tomcat
+|_ webapps
+    |_ Projet
+        |_ META-INF
+        |_ WEB-INF
+        |_ liste.jsp
+
+```
+
+#### Côté controller
+
+```
+@Get(url="liste")
+public ModelAndView listeEmp() {
+    ModelAndView mv = new ModelAndView("liste.jsp");
+
+    List<String> listeEmp = List.of("John Doe", "Jane Doe", "Jason Todd");
+    mv.addObject("listeEmp", listeEmp);
+
+    return mv;
+}
+```
+
+#### Côté web
+
+```
+<%@ page import = "java.util.List" %>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liste</title>
+</head>
+<body>
+    <ul>
+        <%
+        
+        List<String> listeEmp = (List<String>) request.getAttribute("listeEmp");
+        for(String str : listeEmp) {
+            out.println("<li>" + str + "</li>");
+        }
+        
+        %>
+    </ul>
+</body>
+</html>
+```
+
