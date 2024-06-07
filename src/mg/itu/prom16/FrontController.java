@@ -50,17 +50,21 @@ public class FrontController extends HttpServlet {
         String realPath = getServletContext().getRealPath(path);
 
         File directory = new File(realPath);
-        File[] files = directory.listFiles();
-
-        for(File f : files) {
-            // filtering class files
-            if(f.isFile() && f.getName().endsWith(".class")) {
-                String className = packageName + "." + f.getName().split(".class")[0];
-                classes.add(Class.forName(className));
+        if(directory.exists()) {
+            File[] files = directory.listFiles();
+    
+            for(File f : files) {
+                // filtering class files
+                if(f.isFile() && f.getName().endsWith(".class")) {
+                    String className = packageName + "." + f.getName().split(".class")[0];
+                    classes.add(Class.forName(className));
+                }
             }
+    
+            return classes;
+        } else {
+            throw new IllegalArgumentException("Your package name is invalid");
         }
-
-        return classes;
     }
 
     public void processRequest(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -89,12 +93,14 @@ public class FrontController extends HttpServlet {
                     throw new ServletException("Erreur : type de retour non supporté");
                 }
 
+            } catch (ServletException se) {
+                throw se;
             } catch (Exception e) {
-                out.println(e.getMessage());
+                out.println(e);
             }
             
         } else {
-            out.println("No method matching '" + urlToSearch + "' to call");
+            throw new ServletException("No method matching '" + urlToSearch + "' to call");
         }
 
         out.flush();
@@ -133,6 +139,9 @@ public class FrontController extends HttpServlet {
 
             // fetching all classes in the controllers package
             List<Class<?>> allClasses = this.findClasses(packageName);
+            if(allClasses.size() == 0) {
+                throw new ServletException("There must be content in your controller package");
+            }
 
             for (Class<?> classe : allClasses) {
                 // checking which of these classes are controllers
@@ -145,6 +154,9 @@ public class FrontController extends HttpServlet {
                         if (m.isAnnotationPresent(getAnnotation)) {
                             // when a method is annotated with Get, we fetch its url value and create a new couple in the urlsToMethods Map
                             Get mGetAnnotation = (Get) m.getAnnotation(getAnnotation);
+                            if(urls.containsKey(mGetAnnotation.url())) {
+                                throw new ServletException("Multiple methods cannot lead the same URLs among your controllers");
+                            }
                             urls.put(mGetAnnotation.url(), new Mapping(classe.getName(), m.getName()));
                         }
                     }
@@ -155,8 +167,10 @@ public class FrontController extends HttpServlet {
             // setting the values of the attributes
             this.setControllerNamesList(controllers);
             this.setUrlToMethods(urls);
+        } catch (IllegalArgumentException iae) {
+            throw new ServletException(iae);
         } catch (Exception e) {
-            
+            throw new ServletException(e);
         }
     }
 
