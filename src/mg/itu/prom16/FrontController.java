@@ -42,7 +42,7 @@ public class FrontController extends HttpServlet {
      * findClasses will fetch all classes inside the package 'packageName'
      * and return them as a List
      */
-    public List<Class<?>> findClasses(String packageName) throws ClassNotFoundException {
+    public List<Class<?>> findClasses(String packageName) throws ClassNotFoundException, IllegalArgumentException {
         List<Class<?>> classes = new ArrayList<>();
 
         // making sure the path to the controller package is correct
@@ -76,8 +76,10 @@ public class FrontController extends HttpServlet {
         // searching for that URL inside of our HashMap
         if(urlToMethods.containsKey(urlToSearch)) {
             Mapping m = urlToMethods.get(urlToSearch);
+            Object[] args = m.findParamsInRequest(req);
+
             try {
-                Object result = m.invoke();
+                Object result = m.invoke(args);
                 Class<?> returnType = m.getReturnType();
 
                 if(returnType == String.class) {
@@ -90,11 +92,12 @@ public class FrontController extends HttpServlet {
                 }
 
             } catch (Exception e) {
-                out.println(e.getMessage());
+                throw new ServletException(e);
             }
             
         } else {
-            out.println("No method matching '" + urlToSearch + "' to call");
+            resp.sendError(404, "No method matching '" + urlToSearch + "' to call");
+            // throw new ServletException("No method matching '" + urlToSearch + "' to call");
         }
 
         out.flush();
@@ -145,7 +148,7 @@ public class FrontController extends HttpServlet {
                         if (m.isAnnotationPresent(getAnnotation)) {
                             // when a method is annotated with Get, we fetch its url value and create a new couple in the urlsToMethods Map
                             Get mGetAnnotation = (Get) m.getAnnotation(getAnnotation);
-                            urls.put(mGetAnnotation.url(), new Mapping(classe.getName(), m.getName()));
+                            urls.put(mGetAnnotation.url(), new Mapping(classe.getName(), m.getName(), m.getParameters()));
                         }
                     }
 
