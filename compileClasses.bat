@@ -26,7 +26,7 @@ for /F "delims=" %%i in (libs.txt) do set "classpath=!classpath!%%i;"
 @REM echo "%classpath%"
 
 :: Exécuter la commande javac
-javac -d bin -cp @libs.txt @sources.txt
+javac -parameters -d bin -cp @libs.txt @sources.txt
 :: Supprimer les fichiers sources.txt et libs.txt après la compilation
 del sources.txt
 del libs.txt
