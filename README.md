@@ -145,3 +145,4 @@ public ModelAndView traitementForm(String message, @Param(name = "message2") Str
 }
 ```
 Dans notre cas ici, le FrontController va rechercher dans la requête les paramètres de noms "message" et "message2". 
+
