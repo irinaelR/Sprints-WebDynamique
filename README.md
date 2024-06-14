@@ -125,3 +125,24 @@ Cette fois-ci, nous allons nous assurer que le projet gère correctement les exc
 - Le package de controller dans `<context-param>` ne doit être ni **vide** ni **inexistant**
 - Le type de retour des fonctions annotées Get **doivent** être soit de type String (=> réponse text/plain) soit de type ModelAndView (=> redirection vers la vue choisie)
 - Plusieurs fonctions annotées Get ne peuvent pas avoir le même URL même si elles sont dans des controllers différents
+
+### Sprint 6
+11/06/2024
+
+A présent, les méthodes mappées Get peuvent avoir des paramètres (mais uniquement de type String pour l'instant). Il y a deux manières de faire correspondre les paramètres HTTP et les arguments des fonctions :
+- utiliser le nom des paramètres HTTP en guise de nom des arguments
+- utiliser la nouvelle annotation Param en lui donnant un 'name' qui correspondra au paramètre HTTP 
+
+Voici un exemple des deux :
+```
+@Get(url="traitement")
+public ModelAndView traitementForm(String message, @Param(name = "message2") String secret) {
+    ModelAndView mv = new ModelAndView("display.jsp");
+
+    mv.addObject("displayText", message + "(" + secret + ")");
+
+    return mv;
+}
+```
+Dans notre cas ici, le FrontController va rechercher dans la requête les paramètres de noms "message" et "message2". 
+
