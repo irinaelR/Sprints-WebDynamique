@@ -100,7 +100,7 @@ public class Mapping {
             }
 
             Class<?> paramType = p.getType();
-            if(!paramType.isPrimitive()) {
+            if(!paramType.isPrimitive() && paramType != String.class) {
                 // creating the object to pass in argument
                 Constructor c = paramType.getDeclaredConstructor();
                 o = c.newInstance();
