@@ -1,7 +1,6 @@
 package framework.utilities;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
+import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.List;
 import framework.annotations.Param;
@@ -85,17 +84,45 @@ public class Mapping {
         return classArr;
     }
 
-    public Object[] findParamsInRequest(HttpServletRequest req) {
+    public Object[] findParamsInRequest(HttpServletRequest req) throws Exception {
         List<Object> args = new ArrayList<>();
 
         for (Parameter p : this.params) {
-            String key = p.getName();
-            String o = req.getParameter(key);
+            Object o = null;
+            String key = "";
 
-            if(o == null && p.isAnnotationPresent(Param.class)) {
+            // getting the inline parameter name
+            if(p.isAnnotationPresent(Param.class)) {
                 Param annotationParam = (Param) p.getAnnotation(Param.class);
                 key = annotationParam.name();
-                o = req.getParameter(key);
+            } else {
+                key = p.getName();
+            }
+
+            Class<?> paramType = p.getType();
+            if(!paramType.isPrimitive() && paramType != String.class) {
+                // creating the object to pass in argument
+                Constructor c = paramType.getDeclaredConstructor();
+                o = c.newInstance();
+
+                // setting each of its attributes or fields
+                Field[] attributes = paramType.getDeclaredFields();
+                for (Field attr : attributes) {
+                    try {
+                        // the request parameters would be of the format 'paramName.attrName'
+                        String attrKey = key + "." + attr.getName();
+                        String attrValStr = req.getParameter(attrKey);
+
+                        // setting the attribute of the object o
+                        Method setter = ReflectUtils.setter(attr, paramType);
+                        setter.invoke(o, ConversionUtils.convert(attrValStr, attr.getType()));
+                    } catch (Exception e) {
+                        throw e;
+                    }
+                }
+            } else {
+                String valueStr = req.getParameter(key);
+                o = ConversionUtils.convert(valueStr, paramType);
             }
             
             args.add(o);
