@@ -76,9 +76,9 @@ public class FrontController extends HttpServlet {
         // searching for that URL inside of our HashMap
         if(urlToMethods.containsKey(urlToSearch)) {
             Mapping m = urlToMethods.get(urlToSearch);
-            Object[] args = m.findParamsInRequest(req);
-
+            
             try {
+                Object[] args = m.findParamsInRequest(req);
                 Object result = m.invoke(args);
                 Class<?> returnType = m.getReturnType();
 
