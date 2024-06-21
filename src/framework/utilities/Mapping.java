@@ -3,6 +3,11 @@ package framework.utilities;
 import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.thoughtworks.paranamer.AdaptiveParanamer;
+import com.thoughtworks.paranamer.ParameterNamesNotFoundException;
+import com.thoughtworks.paranamer.Paranamer;
+
 import framework.annotations.Param;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -87,46 +92,67 @@ public class Mapping {
     public Object[] findParamsInRequest(HttpServletRequest req) throws Exception {
         List<Object> args = new ArrayList<>();
 
-        for (Parameter p : this.params) {
-            Object o = null;
-            String key = "";
+        Class<?> clazz = Class.forName(this.getClassName());
+        Method m = clazz.getMethod(this.getMethodName(), this.extractParamTypes());
 
-            // getting the inline parameter name
-            if(p.isAnnotationPresent(Param.class)) {
-                Param annotationParam = (Param) p.getAnnotation(Param.class);
-                key = annotationParam.name();
-            } else {
-                key = p.getName();
-            }
-
-            Class<?> paramType = p.getType();
-            if(!paramType.isPrimitive() && paramType != String.class) {
-                // creating the object to pass in argument
-                Constructor c = paramType.getDeclaredConstructor();
-                o = c.newInstance();
-
-                // setting each of its attributes or fields
-                Field[] attributes = paramType.getDeclaredFields();
-                for (Field attr : attributes) {
-                    try {
-                        // the request parameters would be of the format 'paramName.attrName'
-                        String attrKey = key + "." + attr.getName();
-                        String attrValStr = req.getParameter(attrKey);
-
-                        // setting the attribute of the object o
-                        Method setter = ReflectUtils.setter(attr, paramType);
-                        setter.invoke(o, ConversionUtils.convert(attrValStr, attr.getType()));
-                    } catch (Exception e) {
-                        throw e;
-                    }
+        try {
+            // Paranamer paranamer = new AdaptiveParanamer();
+            // String[] paramNames = paranamer.lookupParameterNames(m);
+    
+            for (int i = 0; i < this.params.length; i++) {
+                Parameter p = this.params[i];
+                Object o = null;
+                String key = "";
+    
+                // getting the inline parameter name
+                if(p.isAnnotationPresent(Param.class)) {
+                    Param annotationParam = (Param) p.getAnnotation(Param.class);
+                    key = annotationParam.name();
+                } else {
+                    // key = paramNames[i];
+                    key = p.getName();
                 }
-            } else {
-                String valueStr = req.getParameter(key);
-                o = ConversionUtils.convert(valueStr, paramType);
+    
+                Class<?> paramType = p.getType();
+                if(!paramType.isPrimitive() && paramType != String.class) {
+                    // creating the object to pass in argument
+                    Constructor c = paramType.getDeclaredConstructor();
+                    o = c.newInstance();
+    
+                    // setting each of its attributes or fields
+                    Field[] attributes = paramType.getDeclaredFields();
+                    for (Field attr : attributes) {
+                        try {
+                            String attrKey = key + ".";
+                            if(attr.isAnnotationPresent(framework.annotations.Field.class)) {
+                                // the request parameters would be of the format 'paramName.name' (name got from the Field annotation)
+                                framework.annotations.Field f = attr.getAnnotation(framework.annotations.Field.class);
+                                attrKey += f.name();
+                            } else {
+                                // the request parameters would be of the format 'paramName.attrName'
+                                attrKey += attr.getName();
+                            }
+
+                            String attrValStr = req.getParameter(attrKey);
+                                
+                            // setting the attribute of the object o
+                            Method setter = ReflectUtils.setter(attr, paramType);
+                            setter.invoke(o, ConversionUtils.convert(attrValStr, attr.getType()));
+                        } catch (Exception e) {
+                            throw e;
+                        }
+                    }
+                } else {
+                    String valueStr = req.getParameter(key);
+                    o = ConversionUtils.convert(valueStr, paramType);
+                }
+                
+                args.add(o);
             }
-            
-            args.add(o);
+        } catch (ParameterNamesNotFoundException e) {
+            throw new Exception(String.format("Parameter names not found (parameter array size:%d)", this.params.length), e);
         }
+        
 
         if(args.size() > 0) {
             return args.toArray();
