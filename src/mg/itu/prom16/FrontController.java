@@ -76,12 +76,15 @@ public class FrontController extends HttpServlet {
         // searching for that URL inside of our HashMap
         if(urlToMethods.containsKey(urlToSearch)) {
             Mapping m = urlToMethods.get(urlToSearch);
-            
+            CustomSession cs = new CustomSession(req.getSession());
+
             try {
-                Object[] args = m.findParamsInRequest(req);
+                Object[] args = m.findParamsInRequest(req, cs);
                 Object result = m.invoke(args);
                 Class<?> returnType = m.getReturnType();
 
+                cs.replaceSession(req.getSession());
+                
                 if(returnType == String.class) {
                     out.println((String) result);
                 } else if(returnType == ModelAndView.class) {
