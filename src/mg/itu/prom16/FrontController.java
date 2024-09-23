@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import com.google.gson.Gson;
+
 import framework.annotations.Get;
 import framework.utilities.Mapping;
 import jakarta.servlet.ServletContext;
@@ -64,7 +66,6 @@ public class FrontController extends HttpServlet {
     }
 
     public void processRequest(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        resp.setContentType("text/plain");
 
         PrintWriter out = resp.getWriter();
 
@@ -84,15 +85,30 @@ public class FrontController extends HttpServlet {
                 Class<?> returnType = m.getReturnType();
 
                 cs.replaceSession(req.getSession());
-                
-                if(returnType == String.class) {
-                    out.println((String) result);
-                } else if(returnType == ModelAndView.class) {
-                    ModelAndView mv = (ModelAndView) result;
-                    mv.sendToView(req, resp);
+
+                if (m.isRestAPI()) {
+                    Gson gson = new Gson();
+                    String jsonOutput = "";
+                    if (returnType == ModelAndView.class) {
+                        jsonOutput = gson.toJson(((ModelAndView) result).getData());
+                    } else {
+                        jsonOutput = gson.toJson(result);
+                    }
+
+                    resp.setContentType("application/json");
+                    out.println(jsonOutput);
                 } else {
-                    throw new ServletException("Erreur : type de retour non supporté");
+                    if(returnType == String.class) {
+                        resp.setContentType("text/plain");
+                        out.println((String) result);
+                    } else if(returnType == ModelAndView.class) {
+                        ModelAndView mv = (ModelAndView) result;
+                        mv.sendToView(req, resp);
+                    } else {
+                        throw new ServletException("Erreur : type de retour non supporté");
+                    }
                 }
+                
 
             } catch (Exception e) {
                 throw new ServletException(e);

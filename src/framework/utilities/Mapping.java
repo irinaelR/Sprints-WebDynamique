@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import framework.annotations.Param;
+import framework.annotations.RestAPI;
 import jakarta.servlet.http.HttpServletRequest;
 import mg.itu.prom16.CustomSession;
 
@@ -158,5 +159,12 @@ public class Mapping {
         } else {
             return null;
         }
+    }
+
+    public boolean isRestAPI() throws Exception {
+        Class<?> clazz = Class.forName(this.getClassName());
+        Method m = clazz.getMethod(this.getMethodName(), this.extractParamTypes());
+
+        return m.isAnnotationPresent(RestAPI.class);
     }
 }
