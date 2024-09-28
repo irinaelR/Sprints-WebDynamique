@@ -2,7 +2,6 @@ package mg.itu.prom16;
 
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Map.Entry;
 
 import jakarta.servlet.http.HttpSession;
@@ -17,9 +16,6 @@ public class CustomSession {
         this.setValues(sessionKeyValues);
     }
 
-    private HashMap<String, Object> getValues() {
-        return values;
-    }
     private void setValues(HashMap<String, Object> values) {
         this.values = values;
     }
