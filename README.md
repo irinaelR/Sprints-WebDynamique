@@ -209,7 +209,7 @@ Voici un exemple :
 
 ### Sprint 8
 
-Nous pouvons désormais utiliser des sessions grâce au framework. Un objet `CustomSession` est à mettre en argument aux fonctions qui veulent utiliser la session dans les Controller. Pas besoin de définir cet objet où que ce soit, il doit seulement être présent parmi les paramètres de la méthode. C'est le seul argument qui n'a pas besoin d'annotation @Param. 
+Nous pouvons désormais utiliser des sessions grâce au framework. Un objet `CustomSession` est à mettre en argument aux fonctions qui veulent utiliser la session dans les Controller. Pas besoin de définir cet objet où que ce soit, il doit seulement être présent parmi les paramètres de la méthode. C'est le seul argument qui n'a pas besoin d'annotation `@Param`. 
 CustomSession est un Dictionaire, donc elle propose les 4 méthodes : get, add, remove et update pour accéder aux données identifiées par des clés (String). 
 
 ```
