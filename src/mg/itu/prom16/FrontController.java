@@ -9,7 +9,7 @@ import java.util.List;
 
 import com.google.gson.Gson;
 
-import framework.annotations.Get;
+import framework.annotations.Map;
 import framework.utilities.Mapping;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
@@ -65,7 +65,7 @@ public class FrontController extends HttpServlet {
         return classes;
     }
 
-    public void processRequest(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    public void processRequest(HttpServletRequest req, HttpServletResponse resp, String method) throws ServletException, IOException {
 
         PrintWriter out = resp.getWriter();
 
@@ -74,51 +74,52 @@ public class FrontController extends HttpServlet {
         String[] partedReq = requestedURL.split("/");
         String urlToSearch = partedReq[partedReq.length - 1];
         
-        // searching for that URL inside of our HashMap
-        if(urlToMethods.containsKey(urlToSearch)) {
-            Mapping m = urlToMethods.get(urlToSearch);
-            CustomSession cs = new CustomSession(req.getSession());
+        try {
+            // searching for that URL inside of our HashMap
+            if(urlToMethods.containsKey(urlToSearch)) {
+                Mapping m = urlToMethods.get(urlToSearch);
+                CustomSession cs = new CustomSession(req.getSession());
 
-            try {
-                Object[] args = m.findParamsInRequest(req, cs);
-                Object result = m.invoke(args);
-                Class<?> returnType = m.getReturnType();
-
-                cs.replaceSession(req.getSession());
-
-                if (m.isRestAPI()) {
-                    Gson gson = new Gson();
-                    String jsonOutput = "";
-                    if (returnType == ModelAndView.class) {
-                        jsonOutput = gson.toJson(((ModelAndView) result).getData());
-                    } else {
-                        jsonOutput = gson.toJson(result);
-                    }
-
-                    resp.setContentType("application/json");
-                    out.println(jsonOutput);
+                if (!m.isProperlyCalled(method)) {
+                    resp.sendError(405); // method not allowed
                 } else {
-                    if(returnType == String.class) {
-                        resp.setContentType("text/plain");
-                        out.println((String) result);
-                    } else if(returnType == ModelAndView.class) {
-                        ModelAndView mv = (ModelAndView) result;
-                        mv.sendToView(req, resp);
+                    Object[] args = m.findParamsInRequest(req, cs);
+                    Object result = m.invoke(args);
+                    Class<?> returnType = m.getReturnType();
+    
+                    cs.replaceSession(req.getSession());
+    
+                    if (m.isRestAPI()) {
+                        Gson gson = new Gson();
+                        String jsonOutput = "";
+                        if (returnType == ModelAndView.class) {
+                            jsonOutput = gson.toJson(((ModelAndView) result).getData());
+                        } else {
+                            jsonOutput = gson.toJson(result);
+                        }
+    
+                        resp.setContentType("application/json");
+                        out.println(jsonOutput);
                     } else {
-                        throw new ServletException("Erreur : type de retour non supporté");
+                        if(returnType == String.class) {
+                            resp.setContentType("text/plain");
+                            out.println((String) result);
+                        } else if(returnType == ModelAndView.class) {
+                            ModelAndView mv = (ModelAndView) result;
+                            mv.sendToView(req, resp);
+                        } else {
+                            throw new ServletException("Erreur : type de retour non supporté");
+                        }
                     }
                 }
-                
-
-            } catch (Exception e) {
-                throw new ServletException(e);
+            } else {
+                resp.sendError(404, "No method matching '" + urlToSearch + "' to call");
+                // throw new ServletException("No method matching '" + urlToSearch + "' to call");
             }
-            
-        } else {
-            resp.sendError(404, "No method matching '" + urlToSearch + "' to call");
-            // throw new ServletException("No method matching '" + urlToSearch + "' to call");
+        } catch (Exception e) {
+            throw new ServletException(e);
         }
-
+            
         out.flush();
         out.close();
         
@@ -126,12 +127,12 @@ public class FrontController extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        processRequest(req, resp);
+        processRequest(req, resp, "GET");
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        processRequest(req, resp);
+        processRequest(req, resp, "POST");
     }
 
     @Override
@@ -151,7 +152,7 @@ public class FrontController extends HttpServlet {
         try {
             // annotation classes
             Class<? extends Annotation> controllerAnnotation = (Class<? extends Annotation>) Class.forName("framework.annotations.Controller");
-            Class<? extends Annotation> getAnnotation = (Class<? extends Annotation>) Class.forName("framework.annotations.Get");
+            Class<? extends Annotation> getAnnotation = (Class<? extends Annotation>) Class.forName("framework.annotations.Map");
 
             // fetching all classes in the controllers package
             List<Class<?>> allClasses = this.findClasses(packageName);
@@ -161,13 +162,13 @@ public class FrontController extends HttpServlet {
                 if(classe.isAnnotationPresent(controllerAnnotation)) {
                     controllers.add(classe.getName());
 
-                    // iterating through all the methods of the controller classes to check which ones are annotated with Get
+                    // iterating through all the methods of the controller classes to check which ones are annotated with Map
                     Method[] allMethods = classe.getMethods();
                     for (Method m : allMethods) {
                         if (m.isAnnotationPresent(getAnnotation)) {
-                            // when a method is annotated with Get, we fetch its url value and create a new couple in the urlsToMethods Map
-                            Get mGetAnnotation = (Get) m.getAnnotation(getAnnotation);
-                            urls.put(mGetAnnotation.url(), new Mapping(classe.getName(), m.getName(), m.getParameters()));
+                            // when a method is annotated with Map, we fetch its url value and create a new couple in the urlsToMethods Map
+                            Map mMapAnnotation = (Map) m.getAnnotation(getAnnotation);
+                            urls.put(mMapAnnotation.url(), new Mapping(classe.getName(), m.getName(), m.getParameters()));
                         }
                     }
 

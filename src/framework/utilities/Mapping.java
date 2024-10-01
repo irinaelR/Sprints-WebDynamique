@@ -6,6 +6,7 @@ import java.util.List;
 
 import framework.annotations.Param;
 import framework.annotations.RestAPI;
+import framework.annotations.Verb;
 import jakarta.servlet.http.HttpServletRequest;
 import mg.itu.prom16.CustomSession;
 
@@ -166,5 +167,15 @@ public class Mapping {
         Method m = clazz.getMethod(this.getMethodName(), this.extractParamTypes());
 
         return m.isAnnotationPresent(RestAPI.class);
+    }
+
+    public boolean isProperlyCalled(String calledMethod) throws Exception {
+        Class<?> clazz = Class.forName(this.getClassName());
+        Method m = clazz.getMethod(this.getMethodName(), this.extractParamTypes());
+
+        Verb v = m.getAnnotation(Verb.class);
+        String correctMethod = (v == null) ? "GET" : v.method();
+
+        return correctMethod.trim().equalsIgnoreCase(calledMethod.trim());
     }
 }
