@@ -244,26 +244,6 @@ Tout ceci va se faire par l'annotation de fonction `@RestAPI`.
 
 ### Sprint 10
 
-Une nouvelle annotation `@Verb` pour les méthodes a été ajoutée. Elle possède un paramètre String qui se nomme method, pour préciser la méthode HTTP à utiliser pour appeler l'url. Si method, ou l'annotation elle-même, est ommis, la valeur par défaut est GET. Ainsi, une méthode annotée pour GET ne peut **pas** être appelée par POST, et vice versa. Le serveur va retourner une erreur 405 (HTTP Method Not Allowed) si cela se produit. 
-
-```
-@Map(url = "helloEh")
-@Verb(method = "GET")
-public String helloEh() {
-    return "Hello world hono eh!";
-}
-```
-
-```
-<form action="helloEh" method="post">
-    <h1>Test de POST</h1>
-    <input type="submit" value="OK">
-</form>
-
-<form action="helloEh" method="get">
-    <h1>Test de GET</h1>
-    <input type="submit" value="OK">
-</form>
-```
-
-Ici, lorsqu'on clique sur le bouton du Test de POST, on reçoit une erreur. 
+Une nouvelle annotation `@Verb` pour les méthodes a été ajoutée. Elle possède un paramètre String qui se nomme method, pour préciser la méthode HTTP à utiliser pour appeler l'url. Si method, ou l'annotation elle-même, est ommis, la valeur par défaut est GET. 
+Le framework interdit l'existence de deux méthodes de la même classe ayant le même nom (les différences d'arguments sont caduques), mappées au même URL. Pareillement, on ne peut également pas avoir plusieurs méthodes annotées avec le même VERB. 
+Si on essaie d'appeler un URL qui ne "connaît" pas la méthode HTTP, il se produira une erreur 405. 
