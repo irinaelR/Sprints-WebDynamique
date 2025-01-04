@@ -7,6 +7,7 @@ import java.util.List;
 import framework.annotations.Param;
 import framework.annotations.RestAPI;
 import framework.annotations.Verb;
+import framework.exceptions.FieldValidationException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.Part;
 import mg.itu.prom16.CustomSession;
@@ -108,6 +109,8 @@ public class Mapping {
         // Paranamer paranamer = new AdaptiveParanamer();
         // String[] paramNames = paranamer.lookupParameterNames(m);
 
+        List<ErrorWrapper> errors = new ArrayList<>();
+
         for (int i = 0; i < this.params.length; i++) {
             Parameter p = this.params[i];
             Object o = null;
@@ -152,10 +155,20 @@ public class Mapping {
                         }
 
                         String attrValStr = req.getParameter(attrKey);
+                        Object attrVal = ConversionUtils.convert(attrValStr, attr.getType());
 
-                        // setting the attribute of the object o
-                        Method setter = ReflectUtils.setter(attr, paramType);
-                        setter.invoke(o, ConversionUtils.convert(attrValStr, attr.getType()));
+                        Validator v = new Validator(attr, attrVal, attrKey);
+                        ErrorWrapper errorWrapper = v.performFullCheck();
+
+                        if (errorWrapper.hasErrors()) {
+                            errors.add(errorWrapper);
+                        } else {
+                            // setting the attribute of the object o
+                            Method setter = ReflectUtils.setter(attr, paramType);
+                            setter.invoke(o, attrVal);
+                            args.add(o);
+                        }
+
                     } catch (Exception e) {
                         throw e;
                     }
@@ -163,9 +176,14 @@ public class Mapping {
             } else {
                 String valueStr = req.getParameter(key);
                 o = ConversionUtils.convert(valueStr, paramType);
+                args.add(o);
             }
 
-            args.add(o);
+        }
+
+        if (errors.size() > 0) {
+            FieldValidationException fve = new FieldValidationException(errors);
+            throw fve;
         }
 
         if (args.size() > 0) {
