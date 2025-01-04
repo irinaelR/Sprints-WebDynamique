@@ -16,6 +16,7 @@ import framework.utilities.Mapping;
 import framework.utilities.MappingWrapper;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -23,6 +24,7 @@ import jakarta.servlet.http.HttpServletResponse;
 /*
  * FrontController
  */
+@MultipartConfig
 public class FrontController extends HttpServlet {
     List<String> controllerNamesList;
     HashMap<String, MappingWrapper> urlToMethods;

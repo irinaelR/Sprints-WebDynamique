@@ -8,6 +8,7 @@ import framework.annotations.Param;
 import framework.annotations.RestAPI;
 import framework.annotations.Verb;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.Part;
 import mg.itu.prom16.CustomSession;
 
 public class Mapping {
@@ -127,7 +128,10 @@ public class Mapping {
             }
 
             Class<?> paramType = p.getType();
-            if (!paramType.isPrimitive() && paramType != String.class) {
+            if (paramType == FormFile.class) {
+                Part part = req.getPart(key);
+                o = new FormFile(part);
+            } else if (!paramType.isPrimitive() && paramType != String.class) {
                 // creating the object to pass in argument
                 Constructor constr = paramType.getDeclaredConstructor();
                 o = constr.newInstance();
