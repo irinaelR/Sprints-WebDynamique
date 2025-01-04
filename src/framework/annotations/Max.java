@@ -9,5 +9,5 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface Max {
     double value();
-    boolean isStrict() default false;
+    boolean isStrict() default true;
 }
