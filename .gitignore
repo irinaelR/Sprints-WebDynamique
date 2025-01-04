@@ -1,3 +1,7 @@
 TODO.md
 *.class
 lib
+*.jar
+.vscode
+src/MainClass.java
+archiver.bat

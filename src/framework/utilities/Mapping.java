@@ -6,6 +6,7 @@ import java.util.List;
 
 import framework.annotations.Param;
 import framework.annotations.RestAPI;
+import framework.annotations.Verb;
 import jakarta.servlet.http.HttpServletRequest;
 import mg.itu.prom16.CustomSession;
 
@@ -13,22 +14,27 @@ public class Mapping {
     String className;
     String methodName;
     Parameter[] params;
-    
+
     public Parameter[] getParams() {
         return params;
     }
+
     public void setParams(Parameter[] params) {
         this.params = params;
     }
+
     public String getClassName() {
         return className;
     }
+
     public void setClassName(String className) {
         this.className = className;
     }
+
     public String getMethodName() {
         return methodName;
     }
+
     public void setMethodName(String methodName) {
         this.methodName = methodName;
     }
@@ -38,12 +44,13 @@ public class Mapping {
         this.methodName = methodName;
         this.params = params;
     }
+
     public Mapping() {
     }
 
     public Object invoke(Object[] args) throws Exception {
         Object o = null;
-        
+
         Class<?> clazz = Class.forName(this.getClassName());
         Object ins = clazz.getConstructor().newInstance();
 
@@ -58,12 +65,15 @@ public class Mapping {
         Class<?> clazz = null;
 
         try {
-            Method m = Class.forName(this.getClassName()).getDeclaredMethod(this.getMethodName(), this.extractParamTypes());
+            Method m = Class.forName(this.getClassName()).getDeclaredMethod(this.getMethodName(),
+                    this.extractParamTypes());
             clazz = m.getReturnType();
         } catch (ClassNotFoundException cnfe) {
             throw new Exception("La classe " + this.getClassName() + " dans votre object Mapping n'existe pas", cnfe);
         } catch (NoSuchMethodException nsme) {
-            throw new Exception("La fonction " + this.getMethodName() + " dans La classe " + this.getClassName() + " n'existe pas", nsme);
+            throw new Exception(
+                    "La fonction " + this.getMethodName() + " dans La classe " + this.getClassName() + " n'existe pas",
+                    nsme);
         }
 
         return clazz;
@@ -77,7 +87,7 @@ public class Mapping {
             tempList.add(p.getType());
         }
 
-        if(tempList.size() > 0) {
+        if (tempList.size() > 0) {
             classArr = new Class[tempList.size()];
             for (int i = 0; i < classArr.length; i++) {
                 classArr[i] = tempList.get(i);
@@ -102,10 +112,10 @@ public class Mapping {
             Object o = null;
             String key = "";
 
-            if(p.getType() == CustomSession.class) {
+            if (p.getType() == CustomSession.class) {
                 args.add(c);
                 continue;
-            } else if(p.isAnnotationPresent(Param.class)) {
+            } else if (p.isAnnotationPresent(Param.class)) {
                 // getting the inline parameter name
                 Param annotationParam = (Param) p.getAnnotation(Param.class);
                 key = annotationParam.name();
@@ -117,7 +127,7 @@ public class Mapping {
             }
 
             Class<?> paramType = p.getType();
-            if(!paramType.isPrimitive() && paramType != String.class) {
+            if (!paramType.isPrimitive() && paramType != String.class) {
                 // creating the object to pass in argument
                 Constructor constr = paramType.getDeclaredConstructor();
                 o = constr.newInstance();
@@ -127,8 +137,9 @@ public class Mapping {
                 for (Field attr : attributes) {
                     try {
                         String attrKey = key + ".";
-                        if(attr.isAnnotationPresent(framework.annotations.Field.class)) {
-                            // the request parameters would be of the format 'paramName.name' (name got from the Field annotation)
+                        if (attr.isAnnotationPresent(framework.annotations.Field.class)) {
+                            // the request parameters would be of the format 'paramName.name' (name got from
+                            // the Field annotation)
                             framework.annotations.Field f = attr.getAnnotation(framework.annotations.Field.class);
                             attrKey += f.name();
                         } else {
@@ -137,7 +148,7 @@ public class Mapping {
                         }
 
                         String attrValStr = req.getParameter(attrKey);
-                            
+
                         // setting the attribute of the object o
                         Method setter = ReflectUtils.setter(attr, paramType);
                         setter.invoke(o, ConversionUtils.convert(attrValStr, attr.getType()));
@@ -149,12 +160,11 @@ public class Mapping {
                 String valueStr = req.getParameter(key);
                 o = ConversionUtils.convert(valueStr, paramType);
             }
-            
+
             args.add(o);
         }
-        
 
-        if(args.size() > 0) {
+        if (args.size() > 0) {
             return args.toArray();
         } else {
             return null;
@@ -166,5 +176,52 @@ public class Mapping {
         Method m = clazz.getMethod(this.getMethodName(), this.extractParamTypes());
 
         return m.isAnnotationPresent(RestAPI.class);
+    }
+
+    public boolean isProperlyCalled(String calledMethod) throws Exception {
+        Class<?> clazz = Class.forName(this.getClassName());
+        Method m = clazz.getMethod(this.getMethodName(), this.extractParamTypes());
+
+        Verb v = m.getAnnotation(Verb.class);
+        String correctMethod = (v == null) ? "GET" : v.method();
+
+        return correctMethod.trim().equalsIgnoreCase(calledMethod.trim());
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((className == null) ? 0 : className.hashCode());
+        result = prime * result + ((methodName == null) ? 0 : methodName.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+
+        Mapping other = (Mapping) obj;
+        if (className == null) {
+            if (other.className != null)
+                return false;
+        } else if (!className.equals(other.className))
+            return false;
+        if (methodName == null) {
+            if (other.methodName != null)
+                return false;
+        } else if (!methodName.equals(other.methodName))
+            return false;
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "Mapping [className=" + className + ", methodName=" + methodName + "]";
     }
 }
