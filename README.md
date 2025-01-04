@@ -242,8 +242,12 @@ public String letsDelete(CustomSession c) {
 Les méthodes de Controllers peuvent maintenant être annotées pour renvoyer du JSON (d'où la *nécessité* de la librairie gson). Ces fonctions peuvent avoir n'importe quel type de retour à part `void`. Les objets seront automatiquement convertis en JSON et, pour les retours ModelAndView, l'attribut `data` va être converti à la place. 
 Tout ceci va se faire par l'annotation de fonction `@RestAPI`. 
 
-### Sprint 10
+### Sprint 10 + 11
 
 Une nouvelle annotation `@Verb` pour les méthodes a été ajoutée. Elle possède un paramètre String qui se nomme method, pour préciser la méthode HTTP à utiliser pour appeler l'url. Si method, ou l'annotation elle-même, est ommis, la valeur par défaut est GET. 
 Le framework interdit l'existence de deux méthodes de la même classe ayant le même nom (les différences d'arguments sont caduques), mappées au même URL. Pareillement, on ne peut également pas avoir plusieurs méthodes annotées avec le même VERB. 
 Si on essaie d'appeler un URL qui ne "connaît" pas la méthode HTTP, il se produira une erreur 405. 
+
+### Sprint 12
+
+L'upload de fichier peut se faire en utilisant la classe `FileForm` en argument des méthodes de controllers. Elle possède deux arguments : fileName et fileBytes, ainsi qu'une méthode `copyTo` pour écrire le fichier dans le dossier du choix du développeur. 

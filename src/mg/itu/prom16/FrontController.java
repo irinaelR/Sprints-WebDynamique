@@ -12,10 +12,13 @@ import com.google.gson.Gson;
 
 import framework.annotations.Map;
 import framework.annotations.Verb;
+import framework.exceptions.FieldValidationException;
 import framework.utilities.Mapping;
 import framework.utilities.MappingWrapper;
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -23,6 +26,7 @@ import jakarta.servlet.http.HttpServletResponse;
 /*
  * FrontController
  */
+@MultipartConfig
 public class FrontController extends HttpServlet {
     List<String> controllerNamesList;
     HashMap<String, MappingWrapper> urlToMethods;
@@ -68,8 +72,7 @@ public class FrontController extends HttpServlet {
         return classes;
     }
 
-    public void processRequest(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String method = req.getMethod().toUpperCase();
+    public void processRequest(HttpServletRequest req, HttpServletResponse resp, String method) throws ServletException, IOException {
         PrintWriter out = resp.getWriter();
 
         // getting the URL requested by the client
@@ -110,6 +113,8 @@ public class FrontController extends HttpServlet {
                             resp.setContentType("application/json");
                             out.println(jsonOutput);
                         } else {
+                            req.getSession().setAttribute("callingVerb", method);
+                            req.getSession().setAttribute("callingURL", urlToSearch);
                             if (returnType == String.class) {
                                 resp.setContentType("text/plain");
                                 out.println((String) result);
@@ -117,7 +122,7 @@ public class FrontController extends HttpServlet {
                                 ModelAndView mv = (ModelAndView) result;
                                 mv.sendToView(req, resp);
                             } else {
-                                throw new ServletException("Erreur : type de retour non supporté");
+                                throw new ServletException("Error: return type unsupported");
                             }
                         }
                     }
@@ -128,6 +133,24 @@ public class FrontController extends HttpServlet {
                 // throw new ServletException("No method matching '" + urlToSearch + "' to
                 // call");
             }
+        } catch (FieldValidationException fve) {
+            String returnURL = (String) req.getSession().getAttribute("callingURL");
+            String appropriateVerb = (String) req.getSession().getAttribute("callingVerb");
+
+            // out.println(returnURL);
+            // out.println(appropriateVerb);
+
+            java.util.Map<String, String> errorMessages = fve.getAllMessages();
+
+            for (java.util.Map.Entry<String, String> error : errorMessages.entrySet()) {
+                // out.println(error.getKey());
+                req.setAttribute(error.getKey(), error.getValue());
+            }
+
+            req.setAttribute("methodToUse", appropriateVerb);
+
+            RequestDispatcher dispatcher = req.getRequestDispatcher(returnURL);
+            dispatcher.forward(req, resp);
         } catch (Exception e) {
             throw new ServletException(e);
         }
@@ -139,12 +162,20 @@ public class FrontController extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        processRequest(req, resp);
+        String method = (String) req.getAttribute("methodToUse");
+        if (method == null) {
+            method = req.getMethod();
+        }
+        processRequest(req, resp, method);
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        processRequest(req, resp);
+        String method = (String) req.getAttribute("methodToUse");
+        if (method == null) {
+            method = req.getMethod();
+        }
+        processRequest(req, resp, method);
     }
 
     @Override
@@ -210,7 +241,7 @@ public class FrontController extends HttpServlet {
             // setting the values of the attributes
             this.setControllerNamesList(controllers);
             this.setUrlToMethods(urls);
-            
+
         } catch (IllegalArgumentException iae) {
             throw new ServletException("Url-verb-method conflicts have been detected", iae);
         } catch (Exception e) {

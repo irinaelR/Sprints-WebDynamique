@@ -42,7 +42,9 @@ public class CustomSession {
         // Iterate over the attribute names and remove each one
         while (attributeNames.hasMoreElements()) {
             String attributeName = attributeNames.nextElement();
-            session.removeAttribute(attributeName);
+            if (attributeName.compareTo("callingVerb") != 0 && attributeName.compareTo("callingURL") != 0 ) {
+                session.removeAttribute(attributeName);
+            }
         }
 
         // replace by the contents of this class' values
