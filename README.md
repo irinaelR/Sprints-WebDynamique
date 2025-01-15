@@ -251,3 +251,17 @@ Si on essaie d'appeler un URL qui ne "connaît" pas la méthode HTTP, il se prod
 ### Sprint 12
 
 L'upload de fichier peut se faire en utilisant la classe `FileForm` en argument des méthodes de controllers. Elle possède deux arguments : fileName et fileBytes, ainsi qu'une méthode `copyTo` pour écrire le fichier dans le dossier du choix du développeur. 
+
+### Sprint 16
+Dans le projet, dans le fichier web.xml, il faudra déclarer une variable comme suit pour indiquer les clés de session correspondant à l'utilisateur authentifié et son rôle : 
+```
+<context-param>
+    <param-name>auth-user-param</param-name>
+    <param-value>CONNECTED_USER</param-value>
+</context-param>
+
+<context-param>
+    <param-name>auth-role-param</param-name>
+    <param-value>USER_ROLE</param-value>
+</context-param>
+```
