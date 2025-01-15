@@ -31,6 +31,9 @@ public class FrontController extends HttpServlet {
     List<String> controllerNamesList;
     HashMap<String, MappingWrapper> urlToMethods;
 
+    String authenticatedUser;
+    String authenticatedRole;
+
     public HashMap<String, MappingWrapper> getUrlToMethods() {
         return urlToMethods;
     }
@@ -90,6 +93,25 @@ public class FrontController extends HttpServlet {
                     resp.sendError(405, "No controller method found supporting " + method);
                 } else {
                     m = mw.getMapping(method);
+
+                    // authentication check
+                    
+                    String auth = m.auth();
+                    if (auth != null) {
+                        if (req.getSession().getAttribute(this.authenticatedUser) != null) {
+                            if (!auth.isBlank()) {
+                                String foundRole = (String) req.getSession().getAttribute(this.authenticatedRole);
+                                if (!foundRole.equals(auth)) {
+                                    resp.sendError(500, "Authentication failed");
+                                }
+                            }
+                        }
+                        else {
+                            // out.println("He ho");
+                            resp.sendError(500, "Authentication failed");
+                        }
+                    } 
+
                     CustomSession cs = new CustomSession(req.getSession());
 
                     if (!m.isProperlyCalled(method)) {
@@ -137,13 +159,9 @@ public class FrontController extends HttpServlet {
             String returnURL = (String) req.getSession().getAttribute("callingURL");
             String appropriateVerb = (String) req.getSession().getAttribute("callingVerb");
 
-            // out.println(returnURL);
-            // out.println(appropriateVerb);
-
             java.util.Map<String, String> errorMessages = fve.getAllMessages();
 
             for (java.util.Map.Entry<String, String> error : errorMessages.entrySet()) {
-                // out.println(error.getKey());
                 req.setAttribute(error.getKey(), error.getValue());
             }
 
@@ -151,7 +169,8 @@ public class FrontController extends HttpServlet {
 
             RequestDispatcher dispatcher = req.getRequestDispatcher(returnURL);
             dispatcher.forward(req, resp);
-        } catch (Exception e) {
+        } 
+        catch (Exception e) {
             throw new ServletException(e);
         }
 
@@ -185,6 +204,9 @@ public class FrontController extends HttpServlet {
         // fetching the controller package's value from web.xml
         ServletContext context = getServletContext();
         String packageName = context.getInitParameter("controller-package");
+
+        this.authenticatedUser = context.getInitParameter("auth-user-param");
+        this.authenticatedRole = context.getInitParameter("auth-role-param");
 
         List<String> controllers = this.getControllerNamesList();
         controllers = new ArrayList<>(); // making sure the variable isn't null and emptying it everytime

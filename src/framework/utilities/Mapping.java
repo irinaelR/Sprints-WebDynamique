@@ -4,6 +4,7 @@ import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import framework.annotations.Auth;
 import framework.annotations.Param;
 import framework.annotations.RestAPI;
 import framework.annotations.Verb;
@@ -242,6 +243,19 @@ public class Mapping {
         return true;
     }
 
+    public String auth() throws ClassNotFoundException {
+        Class<?> clazz = Class.forName(this.getClassName());
+        // System.out.println(clazz.getName());
+        if (clazz.isAnnotationPresent(Auth.class)) {
+            Auth auth = clazz.getAnnotation(Auth.class);
+            String value = auth.role();
+            return value;
+        } else {
+            System.out.println("Tsisy annotation");
+        }
+        return null;
+    }
+    
     @Override
     public String toString() {
         return "Mapping [className=" + className + ", methodName=" + methodName + "]";
