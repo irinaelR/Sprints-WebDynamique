@@ -55,19 +55,19 @@ public class Validator {
         ErrorWrapper ew = new ErrorWrapper();
 
         if (!checkRequired()) {
-            ew.addMessage("error_" + paramName + "Required", paramName + REQUIRED_MESSAGE);
+            ew.addMessage("error." + paramName + ".Required", paramName + REQUIRED_MESSAGE);
         }
         if (checkLength() != null) {
-            ew.addMessage("error_" + paramName + "Length", checkLength());
+            ew.addMessage("error." + paramName + ".Length", checkLength());
         }
         if (!checkNumeric()) {
-            ew.addMessage("error_" + paramName + "Number", paramName + NUMBER_MESSAGE);
+            ew.addMessage("error." + paramName + ".Number", paramName + NUMBER_MESSAGE);
         }
         if (checkMin() != null) {
-            ew.addMessage("error_" + paramName + "Min", checkMin());
+            ew.addMessage("error." + paramName + ".Min", checkMin());
         }
         if (checkMax() != null) {
-            ew.addMessage("error_" + paramName + "Max", checkMax());
+            ew.addMessage("error." + paramName + ".Max", checkMax());
         }
 
         return ew;

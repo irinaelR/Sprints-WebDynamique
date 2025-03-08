@@ -7,6 +7,7 @@ import java.util.List;
 import framework.annotations.Auth;
 import framework.annotations.Param;
 import framework.annotations.RestAPI;
+import framework.annotations.Skip;
 import framework.annotations.Verb;
 import framework.exceptions.FieldValidationException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,6 +18,8 @@ public class Mapping {
     String className;
     String methodName;
     Parameter[] params;
+    String returnUrl;
+    String returnVerb;
 
     public Parameter[] getParams() {
         return params;
@@ -135,6 +138,7 @@ public class Mapping {
             if (paramType == FormFile.class) {
                 Part part = req.getPart(key);
                 o = new FormFile(part);
+                args.add(o);
             } else if (!paramType.isPrimitive() && paramType != String.class) {
                 // creating the object to pass in argument
                 Constructor constr = paramType.getDeclaredConstructor();
@@ -143,37 +147,41 @@ public class Mapping {
                 // setting each of its attributes or fields
                 Field[] attributes = paramType.getDeclaredFields();
                 for (Field attr : attributes) {
-                    try {
-                        String attrKey = key + ".";
-                        if (attr.isAnnotationPresent(framework.annotations.Field.class)) {
-                            // the request parameters would be of the format 'paramName.name' (name got from
-                            // the Field annotation)
-                            framework.annotations.Field f = attr.getAnnotation(framework.annotations.Field.class);
-                            attrKey += f.name();
-                        } else {
-                            // the request parameters would be of the format 'paramName.attrName'
-                            attrKey += attr.getName();
+                    if (!attr.isAnnotationPresent(Skip.class)) {
+
+                        try {
+                            String attrKey = key + ".";
+                            if (attr.isAnnotationPresent(framework.annotations.Field.class)) {
+                                // the request parameters would be of the format 'paramName.name' (name got from
+                                // the Field annotation)
+                                framework.annotations.Field f = attr.getAnnotation(framework.annotations.Field.class);
+                                attrKey += f.name();
+                            } else {
+                                // the request parameters would be of the format 'paramName.attrName'
+                                attrKey += attr.getName();
+                            }
+
+                            String attrValStr = req.getParameter(attrKey);
+                            Object attrVal = ConversionUtils.convert(attrValStr, attr.getType());
+
+                            Validator v = new Validator(attr, attrVal, attrKey);
+                            ErrorWrapper errorWrapper = v.performFullCheck();
+
+                            if (errorWrapper.hasErrors()) {
+                                errors.add(errorWrapper);
+                            } else {
+                                // setting the attribute of the object o
+                                Method setter = ReflectUtils.setter(attr, paramType);
+                                setter.invoke(o, attrVal);
+                            }
+
+                        } catch (Exception e) {
+                            throw e;
                         }
-
-                        String attrValStr = req.getParameter(attrKey);
-                        Object attrVal = ConversionUtils.convert(attrValStr, attr.getType());
-
-                        Validator v = new Validator(attr, attrVal, attrKey);
-                        ErrorWrapper errorWrapper = v.performFullCheck();
-
-                        if (errorWrapper.hasErrors()) {
-                            errors.add(errorWrapper);
-                        } else {
-                            // setting the attribute of the object o
-                            Method setter = ReflectUtils.setter(attr, paramType);
-                            setter.invoke(o, attrVal);
-                            args.add(o);
-                        }
-
-                    } catch (Exception e) {
-                        throw e;
                     }
                 }
+                args.add(o);
+
             } else {
                 String valueStr = req.getParameter(key);
                 o = ConversionUtils.convert(valueStr, paramType);
@@ -243,11 +251,16 @@ public class Mapping {
         return true;
     }
 
-    public String auth() throws ClassNotFoundException {
+    public String auth() throws ClassNotFoundException, NoSuchMethodException, SecurityException {
         Class<?> clazz = Class.forName(this.getClassName());
+        Method method = clazz.getMethod(this.getMethodName(), this.extractParamTypes());
         // System.out.println(clazz.getName());
         if (clazz.isAnnotationPresent(Auth.class)) {
             Auth auth = clazz.getAnnotation(Auth.class);
+            String value = auth.role();
+            return value;
+        } else if (method.isAnnotationPresent(Auth.class)) {
+            Auth auth = method.getAnnotation(Auth.class);
             String value = auth.role();
             return value;
         } else {
@@ -255,9 +268,25 @@ public class Mapping {
         }
         return null;
     }
-    
+
     @Override
     public String toString() {
         return "Mapping [className=" + className + ", methodName=" + methodName + "]";
+    }
+
+    public String getReturnUrl() {
+        return returnUrl;
+    }
+
+    public void setReturnUrl(String returnUrl) {
+        this.returnUrl = returnUrl;
+    }
+
+    public String getReturnVerb() {
+        return returnVerb;
+    }
+
+    public void setReturnVerb(String returnVerb) {
+        this.returnVerb = returnVerb;
     }
 }

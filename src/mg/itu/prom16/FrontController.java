@@ -11,8 +11,10 @@ import java.util.Map.Entry;
 import com.google.gson.Gson;
 
 import framework.annotations.Map;
+import framework.annotations.Return;
 import framework.annotations.Verb;
 import framework.exceptions.FieldValidationException;
+import framework.utilities.FormFile;
 import framework.utilities.Mapping;
 import framework.utilities.MappingWrapper;
 import jakarta.servlet.RequestDispatcher;
@@ -75,13 +77,18 @@ public class FrontController extends HttpServlet {
         return classes;
     }
 
-    public void processRequest(HttpServletRequest req, HttpServletResponse resp, String method) throws ServletException, IOException {
+    public void processRequest(HttpServletRequest req, HttpServletResponse resp, String method)
+            throws ServletException, IOException {
         PrintWriter out = resp.getWriter();
 
         // getting the URL requested by the client
         String requestedURL = req.getRequestURL().toString();
-        String[] partedReq = requestedURL.split("/");
-        String urlToSearch = partedReq[partedReq.length - 1];
+        System.out.println(requestedURL);
+        String[] partedReq = requestedURL.split("http://localhost:8080/Plane-ticketing/");
+        String urlToSearch = partedReq[1];
+
+        String returnURL = null;
+        String appropriateVerb = null;
 
         try {
             // searching for that URL inside of our HashMap
@@ -94,8 +101,15 @@ public class FrontController extends HttpServlet {
                 } else {
                     m = mw.getMapping(method);
 
+                    if (!m.isProperlyCalled(method)) {
+                        resp.sendError(403);
+                    }
+
+                    returnURL = m.getReturnUrl();
+                    appropriateVerb = m.getReturnVerb();
+
                     // authentication check
-                    
+
                     String auth = m.auth();
                     if (auth != null) {
                         if (req.getSession().getAttribute(this.authenticatedUser) != null) {
@@ -105,63 +119,60 @@ public class FrontController extends HttpServlet {
                                     resp.sendError(500, "Authentication failed");
                                 }
                             }
-                        }
-                        else {
+                        } else {
                             // out.println("He ho");
                             resp.sendError(500, "Authentication failed");
                         }
-                    } 
+                    }
 
                     CustomSession cs = new CustomSession(req.getSession());
 
-                    if (!m.isProperlyCalled(method)) {
-                        resp.sendError(405); // method not allowed
-                    } else {
-                        Object[] args = m.findParamsInRequest(req, cs);
-                        Object result = m.invoke(args);
-                        Class<?> returnType = m.getReturnType();
+                    Object[] args = m.findParamsInRequest(req, cs);
+                    Object result = m.invoke(args);
+                    Class<?> returnType = m.getReturnType();
 
-                        cs.replaceSession(req.getSession());
+                    cs.replaceSession(req.getSession());
 
-                        if (m.isRestAPI()) {
-                            Gson gson = new Gson();
-                            String jsonOutput = "";
-                            if (returnType == ModelAndView.class) {
-                                jsonOutput = gson.toJson(((ModelAndView) result).getData());
-                            } else {
-                                jsonOutput = gson.toJson(result);
-                            }
-
-                            resp.setContentType("application/json");
-                            out.println(jsonOutput);
+                    if (m.isRestAPI()) {
+                        Gson gson = new Gson();
+                        String jsonOutput = "";
+                        if (returnType == ModelAndView.class) {
+                            jsonOutput = gson.toJson(((ModelAndView) result).getData());
                         } else {
-                            req.getSession().setAttribute("callingVerb", method);
-                            req.getSession().setAttribute("callingURL", urlToSearch);
-                            if (returnType == String.class) {
-                                resp.setContentType("text/plain");
-                                out.println((String) result);
-                            } else if (returnType == ModelAndView.class) {
-                                ModelAndView mv = (ModelAndView) result;
-                                mv.sendToView(req, resp);
-                            } else {
-                                throw new ServletException("Error: return type unsupported");
-                            }
+                            jsonOutput = gson.toJson(result);
                         }
+
+                        resp.setContentType("application/json");
+                        out.println(jsonOutput);
+                    } else {
+
+                        if (returnType == String.class) {
+                            String str = (String) result;
+                            if (str.startsWith("redirect:")) {
+                                String[] parts = str.split("redirect:");
+                                resp.sendRedirect(parts[1]);
+                            }
+                            resp.setContentType("text/plain");
+                            out.println(str);
+                        } else if (returnType == ModelAndView.class) {
+                            ModelAndView mv = (ModelAndView) result;
+                            mv.sendToView(req, resp);
+                        } else {
+                            throw new ServletException("Er0ror: return type unsupported");
+                        }
+
                     }
                 }
 
             } else {
                 resp.sendError(404, "No method matching '" + urlToSearch + "' to call");
-                // throw new ServletException("No method matching '" + urlToSearch + "' to
-                // call");
             }
         } catch (FieldValidationException fve) {
-            String returnURL = (String) req.getSession().getAttribute("callingURL");
-            String appropriateVerb = (String) req.getSession().getAttribute("callingVerb");
 
             java.util.Map<String, String> errorMessages = fve.getAllMessages();
 
             for (java.util.Map.Entry<String, String> error : errorMessages.entrySet()) {
+                System.out.println("VALIDATION ERROR: " + error.getKey());
                 req.setAttribute(error.getKey(), error.getValue());
             }
 
@@ -169,8 +180,7 @@ public class FrontController extends HttpServlet {
 
             RequestDispatcher dispatcher = req.getRequestDispatcher(returnURL);
             dispatcher.forward(req, resp);
-        } 
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new ServletException(e);
         }
 
@@ -237,20 +247,28 @@ public class FrontController extends HttpServlet {
                             // when a method is annotated with Map, we fetch its url value and create a new
                             // couple in the urlsToMethods Map
                             Map mMapAnnotation = (Map) m.getAnnotation(getAnnotation);
+                            Mapping mapping = new Mapping(classe.getName(), m.getName(), m.getParameters());
+                            if (m.isAnnotationPresent(Return.class)) {
+                                Return returnAnnotation = m.getAnnotation(Return.class);
+                                String url = returnAnnotation.url();
+                                String verb = returnAnnotation.verb();
+                                mapping.setReturnUrl(url);
+                                mapping.setReturnVerb(verb);
+                            }
                             if (urls.containsKey(mMapAnnotation.url())) {
                                 MappingWrapper mw = urls.get(mMapAnnotation.url());
 
                                 Verb verbAnnotation = m.getAnnotation(Verb.class);
                                 String verb = verbAnnotation != null ? verbAnnotation.method() : "GET";
 
-                                mw.addMapping(verb, new Mapping(classe.getName(), m.getName(), m.getParameters()));
+                                mw.addMapping(verb, mapping);
                             } else {
                                 MappingWrapper mw = new MappingWrapper();
 
                                 Verb verbAnnotation = m.getAnnotation(Verb.class);
                                 String verb = verbAnnotation != null ? verbAnnotation.method() : "GET";
 
-                                mw.addMapping(verb, new Mapping(classe.getName(), m.getName(), m.getParameters()));
+                                mw.addMapping(verb, mapping);
 
                                 urls.put(mMapAnnotation.url(), mw);
                             }

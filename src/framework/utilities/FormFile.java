@@ -4,9 +4,13 @@ import java.io.*;
 import jakarta.servlet.http.Part;
 
 public class FormFile {
-    private final String fileName;
-    private final byte[] fileBytes;
-
+    
+    private String fileName;
+    private byte[] fileBytes;
+    
+    public FormFile() {
+    }
+    
     // Constructor
     public FormFile(Part part) throws IOException {
         this.fileName = extractFileName(part);
@@ -58,5 +62,13 @@ public class FormFile {
             buffer.write(temp, 0, bytesRead);
         }
         return buffer.toByteArray();
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public void setFileBytes(byte[] fileBytes) {
+        this.fileBytes = fileBytes;
     }
 }

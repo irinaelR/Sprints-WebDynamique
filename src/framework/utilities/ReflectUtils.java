@@ -19,7 +19,7 @@ public class ReflectUtils {
 
         // capitalizing the field name to match the camelCase convention
         String fieldName = f.getName();
-        fieldName = fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1).toLowerCase();
+        fieldName = fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
 
         setterName += fieldName;
 
