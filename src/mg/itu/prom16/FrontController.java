@@ -145,8 +145,7 @@ public class FrontController extends HttpServlet {
                         resp.setContentType("application/json");
                         out.println(jsonOutput);
                     } else {
-                        // req.getSession().setAttribute("callingVerb", method);
-                        // req.getSession().setAttribute("callingURL", urlToSearch);
+
                         if (returnType == String.class) {
                             String str = (String) result;
                             if (str.startsWith("redirect:")) {
@@ -167,8 +166,6 @@ public class FrontController extends HttpServlet {
 
             } else {
                 resp.sendError(404, "No method matching '" + urlToSearch + "' to call");
-                // throw new ServletException("No method matching '" + urlToSearch + "' to
-                // call");
             }
         } catch (FieldValidationException fve) {
 
